@@ -134,22 +134,6 @@ with pd.ExcelWriter(excel_file_path, engine='xlsxwriter') as writer:
         worksheet = writer.sheets['node']
         worksheet.insert_image('E1', f'mse_bar_plot_{powergrid}.png')
 
-"""
-# Load the Excel workbook
-workbook = openpyxl.load_workbook(excel_file_path)
 
-# Select the desired sheet
-sheet = workbook[sheet_name]
-
-# Specify the cell or range of cells you want to retrieve
-cell_value = sheet['A1'].value  # Change 'A1' to your desired cell reference
-
-# Or, if you want to iterate through a range of cells, for example, column A from row 1 to 10
-column_values = [sheet[f'A{i}'].value for i in range(1, 11)]
-
-# Print the results
-print(f"Value in A1: {cell_value}")
-print(f"Values in column A from row 1 to 10: {column_values}")
-"""
 # Close the workbook when done
 workbook.close()
