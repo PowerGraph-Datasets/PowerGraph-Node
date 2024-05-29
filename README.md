@@ -1,6 +1,6 @@
 # PowerGraph-node
 # Benchmarking GNN datasets for PowerGrids- node level regression tasks
-
+The increasing complexity of power systems, driven by electrification and the rise of intermittent energy sources, is posing new challenges. Transmission system operators (TSOs) require online tools for effective power systems monitoring, but the current methods for grid analyses, hindered by their computational speed, are unable to fully meet this need. 
 With the InMemoryDatasets Class, we generate the GNN datasets for the UK, IEEE24, IEEE39, IEEE118 power grids. We use **InMemoryDataset** class of Pytorch Geometric.
 
 ## Installation
@@ -45,7 +45,7 @@ Each dataset folder contains the following files:
 | IEEE-118   |  `ieee118`   | IEEE-118 (Powergrid dataset)   |
 | UK         |     `uk`     | UK (Powergrid dataset)         |
 
-Graph dataset that models the power flow and optimal power flow problems in the power grid. To generate a comprehensive dataset for different power grids, we use MATPOWER. This model simulates how failures propagate in the IEEE24, IEEE39, IEEE118 and UK power grids. The output of the model is the final demand not being served (DNS). Our dataset consists of a large set of power grid states, representing the operating conditions before an outage, and is linked to an initial triggering outage (one or more failed elements). Each power grid state is represented as a graph, with a graph-level label assigned based on the results of the physics-based model. The dataset is designed for various graph-level tasks, such as multi-class classification, binary classification, and regression. Bus and branches are the elements of a power grid, buses include loads and generators which represent the nodes of the graph, while branches include transmission lines and transformers which represent the edges of the graph. We provide three features per node: net active power, net apparent power and voltage magnitude. While the features per edge are four: active power flow, reactive power flow, line reactance and line rating.
+Graph dataset that models the power flow and optimal power flow problems in the power grid. To generate a comprehensive dataset for different power grids, we use MATPOWER. We obtain a reference solution for the optimal power flow and power flow problem starting from the loading conditions reported the folder 13_Power_system for each dataset. Bus and branches are the elements of a power grid, buses include loads and generators which represent the nodes of the graph, while branches include transmission lines and transformers which represent the edges of the graph. Each power grid loading is thus represented as a single graph, with a node-level labels assigned based on the results of the power flow and optimal power flow problem.  The node level features are assigned according to the type of bus, i.e., PQ, PV or Slack. While edge-level features are: line reactance and subsceptance.
 
 ## GNN Benchmarking
 
