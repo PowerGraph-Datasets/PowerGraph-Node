@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # Specify the path to your Excel file
-models_path = 'C:\\Users\\avarbella\\OneDrive - ETH Zurich\\Documents\\01_GraphGym\\PowerGraph-masterdataset-node\\code\\modelbig\\'
+models_path = 'path'# Specify the path to the folder containing the Excel files
 rnd_seeds = [0, 100, 300, 700, 1000]
 hyperparameters = ['1l_8h','2l_8h','3l_8h','1l_16h','2l_16h','3l_16h','1l_32h','2l_32h','3l_32h']
 tasks = ['node','nodeopf']
