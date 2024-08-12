@@ -27,14 +27,14 @@ tar -xf data.tar.gz
 
 Each dataset folder contains the following files:
 
-- `edge_attr.mat`: edge feature matrix for the power flow problem
-- `edge_attr_opf.mat`: edge feature matrix for the optimal power flow problem
+- `edge_attr.mat`: edge feature matrix for the power flow problem (branch conductance $G_{ij}$, branch susceptance $B_{ij}$.)
+- `edge_attr_opf.mat`: edge feature matrix for the optimal power flow problem (branch conductance $G_{ij}$, branch susceptance $B_{ij}$.)
 - `edge_index.mat`: branch list for the power flow problem
 - `edge_index_opf.mat`: branch list for the optimal power flow problem
-- `X.mat`: node feature matrix for the power flow problem
-- `Xopf.mat`: node feature matrix for the optimal power flow problem
-- `Y_polar.mat`: node output matrix for the power flow problem
-- `Y_polar_opf.mat`: node output matrix for the optimal power flow problem
+- `X.mat`: node feature matrix for the power flow problem (active power generation $P_{g}$ - active power demand $P_{d}$, reactive power generation $Q_{g}$ - reactive power demand $Q_{d}$, voltage magnitude $V$ , and voltage angle $\theta$, the number of loads $N_{loads}$, and number of generators $N_{gen}$). 
+- `Xopf.mat`: node feature matrix for the optimal power flow problem  (active power generation $P_{g}$ - active power demand $P_{d}$, reactive power generation $Q_{g}$ - reactive power demand $Q_{d}$, voltage magnitude $V$ , and voltage angle $\theta$, the number of loads $N_{loads}$, and number of generators $N_{gen}$). 
+- `Y_polar.mat`: node output matrix for the power flow problem (active power generation $P_{g}$ - active power demand $P_{d}$, reactive power generation $Q_{g}$ - reactive power demand $Q_{d}$, voltage magnitude $V$ , and voltage angle $\theta$). 
+- `Y_polar_opf.mat`: node output matrix for the optimal power flow problem (active power generation $P_{g}$ - active power demand $P_{d}$, reactive power generation $Q_{g}$ - reactive power demand $Q_{d}$, voltage magnitude $V$ , and voltage angle $\theta$). 
 
 ## Dataset description
 
