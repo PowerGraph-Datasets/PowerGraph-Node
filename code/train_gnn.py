@@ -24,10 +24,11 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from gnn.model import get_gnnNets
 from sklearn.metrics import balanced_accuracy_score, f1_score, r2_score, roc_auc_score, precision_score, recall_score
 import json
+import warnings
+warnings.filterwarnings("ignore")
 
 
 # Save directory model_name + dataset_name + layers + hidden_dim
-
 class TrainModel(object):
     def __init__(
         self,
@@ -78,13 +79,21 @@ class TrainModel(object):
             #print(loss)
         elif self.graph_regression:
             loss = self.__loss__(logits, labels)
-        elif self.node_opf_regression or self.node_pf_regression:
+        elif self.node_pf_regression:
             mask = data.mask
             if mask is None:
                 warnings.warn("The node mask is None")
                 mask = torch.ones(labels.shape[0])
-            labels[~mask] = 1e-6
-            logits[~mask] = 1e-6
+            labels[~mask] = 1e-7
+            logits[~mask] = 1e-7
+            loss = self.__loss__(logits[data.mask], labels[data.mask])
+        elif self.node_opf_regression:
+            mask = data.mask
+            if mask is None:
+                warnings.warn("The node mask is None")
+                mask = torch.ones(labels.shape[0])
+            labels[~mask] = 1e-7
+            logits[~mask] = 1e-7
             loss = self.__loss__(logits[data.mask], labels[data.mask])
 
         self.optimizer.zero_grad()
@@ -111,9 +120,9 @@ class TrainModel(object):
             if mask is None:
                 warnings.warn("The node mask is None")
                 mask = torch.ones(labels.shape[0])
-            labels[~mask] = 1e-6
-            logits[~mask] = 1e-6
-            loss = self.__loss__(logits, labels)
+            labels[~mask] = 1e-7
+            logits[~mask] = 1e-7
+            loss = self.__loss__(logits[data.mask], labels[data.mask])
             loss = loss.item()
             preds = logits
         elif self.node_opf_regression:
@@ -121,9 +130,9 @@ class TrainModel(object):
             if mask is None:
                 warnings.warn("The node mask is None")
                 mask = torch.ones(labels.shape[0])
-            labels[~mask] = 1e-6
-            logits[~mask] = 1e-6
-            loss = self.__loss__(logits, labels)
+            labels[~mask] = 1e-7
+            logits[~mask] = 1e-7
+            loss = self.__loss__(logits[data.mask], labels[data.mask])
             loss = loss.item()
             preds = logits
 
@@ -133,7 +142,24 @@ class TrainModel(object):
         self.model.to(self.device)
         self.model.eval()
 
-        if self.graph_regression or self.node_pf_regression or self.node_opf_regression:
+        if self.graph_classification:
+            losses, accs, balanced_accs, f1_scores = [], [], [], []
+            for batch in self.loader[0]["eval"]:
+                batch = batch.to(self.device)
+                loss, batch_preds, logits = self._eval_batch(batch, batch.y)
+                losses.append(loss)
+                accs.append(batch_preds == batch.y)
+                balanced_accs.append(balanced_accuracy_score(batch.y.cpu(), batch_preds.cpu()))
+                f1_scores.append(f1_score(batch.y.cpu(), batch_preds.cpu(), average="weighted"))
+            eval_loss = torch.tensor(losses).mean().item()
+            eval_acc = torch.cat(accs, dim=-1).float().mean().item()
+            eval_balanced_acc = np.mean(balanced_accs)
+            eval_f1_score = np.mean(f1_scores)
+            print(
+                f"Test loss: {eval_loss:.4f}, test acc {eval_acc:.4f}, balanced test acc {eval_balanced_acc:.4f}, test f1 score {eval_f1_score:.4f}"
+            )
+            return eval_loss, eval_acc, eval_balanced_acc, eval_f1_score
+        elif self.graph_regression or self.node_pf_regression or self.node_opf_regression:
             losses, r2scores = [], []
             for batch in self.loader[0]["eval"]:
                 batch = batch.to(self.device)
@@ -161,8 +187,81 @@ class TrainModel(object):
         self.model.load_state_dict(state_dict)
         self.model = self.model.to(self.device)
         self.model.eval()
+        #cross test
+        """
+        from dataset import (
+            SynGraphDataset,
+            PowerGrid
+        )
+        dataset1 = PowerGrid(
+            "C:\\Users\\avarbella\\Documents\\01_GraphGym\\PowerGraph-master\\code\\dataset\\ieee118\\", 'ieee118',
+            datatype='binary')
+        dataset1.data.x = dataset1.data.x.float()
+        dataset1.data.y = dataset1.data.y.squeeze().long()
+        #dataloader_params = self.kwargs.get("dataloader_params")
+        loader1 = get_dataloader(dataset1, **self.dataloader_params)
+        preds_c, balanced_accs_c = [], []
+        for batch in loader1[0]["test"]:
+            batch = batch.to(self.device)
+            loss, batch_preds = self._eval_batch(batch, batch.y)
+            preds_c.append(batch_preds)
+            balanced_accs_c.append(balanced_accuracy_score(batch.y.cpu(), batch_preds.cpu()))
+        test_balanced_acc_c = np.mean(balanced_accs_c)
 
-        if self.node_pf_regression or self.node_opf_regression:
+        print(
+            f"balanced test acc {test_balanced_acc_c:.4f}"
+        )
+        """
+        if self.graph_classification:
+            losses, preds, targets, accs, balanced_accs = [], [], [], [], []
+            for batch in self.loader[0]["test"]:
+                batch = batch.to(self.device)
+                loss, batch_preds, logits = self._eval_batch(batch, batch.y)
+                losses.append(loss)
+                preds.append(logits)
+                targets.append(batch.y)
+                accs.append(batch_preds == batch.y)
+                balanced_accs.append(balanced_accuracy_score(batch.y.cpu(), batch_preds.cpu()))
+
+            test_loss = torch.tensor(losses).mean().item()
+            preds = torch.vstack(preds)
+            targets = torch.cat(targets, dim=-1)
+            test_acc = torch.cat(accs, dim=-1).float().mean().item()
+            test_balanced_acc = np.mean(balanced_accs)
+
+            print(
+                f"Test loss: {test_loss:.4f}, test acc {test_acc:.4f}, balanced test acc {test_balanced_acc:.4f}"
+            )
+            scores = {
+            "test_loss": test_loss,
+            "test_acc": test_acc,
+            "test_balanced_acc": test_balanced_acc,
+            }
+            self.save_scores(scores)
+            return test_loss, test_acc, test_balanced_acc, preds, targets
+        elif self.graph_regression:
+            losses, r2scores, preds, targets = [], [], [], []
+            for batch in self.loader[0]["test"]:
+                batch = batch.to(self.device)
+                loss, batch_preds = self._eval_batch(batch, batch.y)
+                preds.append(batch_preds.squeeze())
+                targets.append(batch.y)
+                r2scores.append(r2_score(batch.y.detach().cpu(), batch_preds.detach().cpu()))
+                losses.append(loss)
+            test_loss = torch.tensor(losses).mean().item()
+            test_r2score = np.mean(r2scores)
+            preds = torch.cat(preds, dim=-1)
+            targets = torch.cat(targets, dim=-1)
+            print(
+                f"test loss: {test_loss:.6f}, test r2score {test_r2score:.6f}"
+            )
+            scores = {
+            "test_loss": test_loss,
+            "test r2score": test_r2score,
+            }
+            self.save_scores(scores)
+            return test_loss, test_r2score, preds, targets
+        elif self.node_pf_regression or self.node_opf_regression:
             losses, r2scores, preds, targets, denpreds, dentargets = [], [], [], [], [], []
             for batch in self.loader[0]["test"]:
                 batch = batch.to(self.device)
@@ -177,7 +276,9 @@ class TrainModel(object):
             test_loss = torch.tensor(losses).mean().item()
             test_r2score = np.mean(r2scores)
             denpreds = torch.cat(denpreds, dim=0)
+            preds = torch.cat(preds, dim=0)
             dentargets = torch.cat(dentargets, dim=0)
+            targets = torch.cat(targets, dim=0)
             print(
                 f"test loss: {test_loss:.6f}, test r2score {test_r2score:.6f}"
             )
@@ -186,7 +287,7 @@ class TrainModel(object):
             "test r2score": test_r2score,
             }
             self.save_scores(scores)
-            return test_loss, test_r2score, denpreds, dentargets
+            return test_loss, test_r2score, preds, targets
 
         else:
             data = self.dataset.data.to(self.device)
@@ -208,7 +309,65 @@ class TrainModel(object):
 
     # Train model
     def train(self, train_params=None, optimizer_params=None):
-        if self.graph_regression or self.node_pf_regression or self.node_opf_regression:
+        if self.graph_classification:
+            num_epochs = train_params["num_epochs"]
+            num_early_stop = train_params["num_early_stop"]
+            #milestones = train_params["milestones"] # needed if using a different LR scheduler
+            #gamma = train_params["gamma"]
+            
+            if optimizer_params is None:
+                self.optimizer = Adam(self.model.parameters())
+            else:
+                self.optimizer = Adam(self.model.parameters(), **optimizer_params)
+            
+            lr_schedule = ReduceLROnPlateau(
+                self.optimizer, mode='max', factor=0.2, patience=10, verbose=True
+            )
+            
+            self.model.to(self.device)
+            best_eval_acc = 0.0
+            best_eval_loss = 0.0
+            early_stop_counter = 0
+            for epoch in range(num_epochs):
+                is_best = False
+                self.model.train()
+                if self.graph_classification:
+                    losses = []
+                    for batch in self.loader[0]["train"]:
+                        batch = batch.to(self.device)
+                        loss = self._train_batch(batch, batch.y)
+                        losses.append(loss)
+                    train_loss = torch.FloatTensor(losses).mean().item()
+            
+                else:
+                    data = self.dataset.data.to(self.device)
+                    train_loss = self._train_batch(data, data.y)
+            
+                with torch.no_grad():
+                    eval_loss, eval_acc, eval_balanced_acc, eval_f1_score = self.eval()
+            
+                print(
+                    f"Epoch:{epoch}, Training_loss:{train_loss:.4f}, Eval_loss:{eval_loss:.4f}, Eval_acc:{eval_acc:.4f}, Eval_balanced_acc:{eval_balanced_acc:.4f}, Eval_f1_score:{eval_f1_score:.4f}, lr:{self.optimizer.param_groups[0]['lr']}"
+                )
+                if num_early_stop > 0:
+                    if eval_loss <= best_eval_loss:
+                        best_eval_loss = eval_loss
+                        early_stop_counter = 0
+                    else:
+                        early_stop_counter += 1
+                    if epoch > num_epochs / 2 and early_stop_counter > num_early_stop:
+                        break
+                if lr_schedule:
+                    lr_schedule.step(eval_acc)
+            
+                if best_eval_acc < eval_acc:
+                    is_best = True
+                    best_eval_acc = eval_acc
+                recording = {"epoch": epoch, "is_best": str(is_best)}
+                if self.save:
+                    self.save_model(is_best, recording=recording)
+        
+        elif self.graph_regression or self.node_pf_regression or self.node_opf_regression:
             num_epochs = train_params["num_epochs"]
             num_early_stop = train_params["num_early_stop"]
             # milestones = train_params["milestones"] # needed if using a different LR scheduler
@@ -230,17 +389,12 @@ class TrainModel(object):
             for epoch in range(num_epochs):
                 is_best = False
                 self.model.train()
-                if self.graph_regression:
-                    losses = []
-                    for batch in self.loader[0]["train"]:
-                        batch = batch.to(self.device)
-                        loss = self._train_batch(batch, batch.y)
-                        losses.append(loss)
-                    train_loss = torch.FloatTensor(losses).mean().item()
-
-                else:
-                    data = self.dataset.data.to(self.device)
-                    train_loss = self._train_batch(data, data.y)
+                losses = []
+                for batch in self.loader[0]["train"]:
+                    batch = batch.to(self.device)
+                    loss = self._train_batch(batch, batch.y)
+                    losses.append(loss)
+                train_loss = torch.FloatTensor(losses).mean().item()
 
                 with torch.no_grad():
                     eval_loss, eval_r2score = self.eval()
@@ -439,19 +593,8 @@ def train_gnn(args, args_group):
         predicted_values = preds.detach().cpu().numpy() if isinstance(preds, torch.Tensor) else np.array(
             preds.detach().cpu().numpy())
         target_values = targets.cpu().numpy() if isinstance(targets, torch.Tensor) else np.array(targets)
-        if args.datatype == 'nodeopf':
-            df_data = pd.DataFrame({
-                  'V target': target_values[:, 0],
-                  'T target': target_values[:, 1],
-                 'Pg target': target_values[:, 2],
-                 'Qg target': target_values[:, 3],
-                 'V pred': predicted_values[:, 0],
-                 'T pred': predicted_values[:, 1],
-                'Pg pred': predicted_values[:, 2],
-                'Qg pred': predicted_values[:, 3],
-            })
-        else:
-            df_data = pd.DataFrame({
+
+        df_data = pd.DataFrame({
                   'V target': target_values[:, 2],
                   'T target': target_values[:, 3],
                  'Pg target': target_values[:, 0],
@@ -488,17 +631,17 @@ def train_gnn(args, args_group):
         predicted_values = preds.detach().cpu().numpy() if isinstance(preds, torch.Tensor) else np.array(
             preds.detach().cpu().numpy())
         target_values = targets.cpu().numpy() if isinstance(targets, torch.Tensor) else np.array(targets)
-        if args.datatype == 'nodeopf':
-            df_data = pd.DataFrame({
-                'V target': target_values[:, 0],
-                'T target': target_values[:, 1],
-                'Pg target': target_values[:, 2],
-                'Qg target': target_values[:, 3],
-                'V pred': predicted_values[:, 0],
-                'T pred': predicted_values[:, 1],
-                'Pg pred': predicted_values[:, 2],
-                'Qg pred': predicted_values[:, 3],
+        df_data = pd.DataFrame({
+                  'V target': target_values[:, 2],
+                  'T target': target_values[:, 3],
+                 'Pg target': target_values[:, 0],
+                 'Qg target': target_values[:, 1],
+                 'V pred': predicted_values[:, 2],
+                 'T pred': predicted_values[:, 3],
+                'Pg pred': predicted_values[:, 0],
+                'Qg pred': predicted_values[:, 1],
             })
+
         # Create a DataFrame for metrics
         metrics = {'Metric': ['MSE loss', 'R2 score'],
                    'Value': [test_loss, test_r2score]}
@@ -573,8 +716,8 @@ if __name__ == "__main__":
     # for loop the training architecture for the number of layers and hidden dimensions
     rnd_seeds = [0, 100, 300, 700, 1000]
     tasks = ['node', 'nodeopf']
-    powergrids = ['ieee24', 'ieee39', 'uk', 'ieee118']
-    models = ['gcn', 'gin', 'gat', 'transformer']
+    powergrids = ['texas']#,'ieee39','ieee118','uk']
+    models = ['gin','gcn', 'gat', 'transformer']
     for powergrid in powergrids:
         args.dataset_name = powergrid
         for task in tasks:
@@ -584,13 +727,17 @@ if __name__ == "__main__":
                 for rnd_seed in rnd_seeds:
                     args.seed = rnd_seed
                     fix_random_seed(rnd_seed)
-                    args.num_layers = 3
-                    args.hidden_dim = 16
-
-                    args_group = create_args_group(parser, args)
-                    print(f"Hidden_dim: {args.hidden_dim}, Num_layers: {args.num_layers}, model {args.model_name}, data {args.dataset_name}, task {args.datatype}, rnd_seed {rnd_seed} ")
-                    train_gnn(args, args_group)
+                    for j in [8,16,32]:   # hidden dimension
+                        for i in [1,2,3]:  # number of layers
+                            args.num_layers = i
+                            args.hidden_dim = j
+                            #if i==3 & j==16:
+                            #    continue
+                            #else:
+                            args_group = create_args_group(parser, args)
+                            print(f"Hidden_dim: {args.hidden_dim}, Num_layers: {args.num_layers}, model {args.model_name}, data {args.dataset_name}, task {args.datatype}, rnd_seed {rnd_seed} ")
+                            train_gnn(args, args_group)
 
         print("CHANGE POWERGRID")
 
-    print("END TRAINING OF POWERGRAPH for PF and OPF tasks")
+    print("END FULL COMPLETE BENCHMARKING OF POWERGRAPH")

@@ -118,7 +118,7 @@ for j=1:n_instances
      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% P        Q         V          T %%%%%%%
      Xpf{iteration-1}(indices_PQ,:) = [-Pl, -Ql, zeros(length(indices_PQ),1), bus_type(indices_PQ)];                                           
      Xpf{iteration-1}(indices_PV,:) = [-Pl_gen+Pg(indices_PV), -Ql_gen, mag(indices_PV) , bus_type(indices_PV)];                                           
-     Xpf{iteration-1}(indices_slack,:) = [0 , 0, mag(indices_slack), bus_type(indices_slack)];  
+     Xpf{iteration-1}(indices_slack,:) = [-Pl(indices_slack) , -Ql(indices_slack), mag(indices_slack), bus_type(indices_slack)];
 
      %%%%%%%%%%%%%%%%%%%%%%%%%% RUN POWER FLOW  %%%%%%%%%%%%%%%%%%%%%%%%%%%
      [case24new,success]=runpf(mpctry);   
