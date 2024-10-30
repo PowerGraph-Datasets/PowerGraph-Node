@@ -727,8 +727,8 @@ if __name__ == "__main__":
                 for rnd_seed in rnd_seeds:
                     args.seed = rnd_seed
                     fix_random_seed(rnd_seed)
-                    for j in [8,16,32]:   # hidden dimension
-                        for i in [1,2,3]:  # number of layers
+                    for j in [8, 16, 32]:   # hidden dimension
+                        for i in [1, 2, 3]:  # number of layers
                             args.num_layers = i
                             args.hidden_dim = j
                             #if i==3 & j==16:
