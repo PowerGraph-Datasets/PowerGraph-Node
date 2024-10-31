@@ -224,7 +224,7 @@ class PowerGrid(InMemoryDataset):
                 N = fullX[i]
                 mask = fullY[i] != 0
                 N_norm = N/maxsX
-                edge_attr = torch.nn.functional.normalize(edge_attr, dim=0)
+
                 Y_o = fullY[i]
                 Y_norm = Y_o /maxsY
                 data = Data(x=N_norm, edge_index=edge_order.to(device), y=Y_norm, edge_attr=edge_attr, maxs=maxsY, mask=mask).to(device)
@@ -259,7 +259,7 @@ class PowerGrid(InMemoryDataset):
                 N = fullX[i]
                 mask = fullY[i] != 0
                 N_norm = N/maxsX
-                edge_attr = torch.nn.functional.normalize(edge_attr, dim=0)
+
                 Y_o = fullY[i]
                 Y_norm = Y_o /maxsY
                 data = Data(x=N_norm, edge_index=edge_order.to(device), y=Y_norm, edge_attr=edge_attr, maxs=maxsY, mask=mask).to(device)
