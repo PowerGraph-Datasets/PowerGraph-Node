@@ -85,8 +85,9 @@ for j=1:n_instances
      Y_polar{iteration-1}(indices_slack,:) = [Pg(indices_slack), Qg(indices_slack), mag(indices_slack), angle(indices_slack)];
 %%     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% POWER FLOW %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     %%%%%%%%%%%%%%%%%%%%%%%%%% set generators with opf results %%%%%%%%%%%
+     %%%%%%%%%%%%%%%%%%%%%%%%%% set generators & voltages with opf results %%%%%%%%%%%
      mpctry.gen(:,2) = case24new.gen(:,2); 
+     mpctry.bus(indices_PV,8) = case24new.bus(indices_PV,8);
      mpctry.gen(:,3) = case24new.gen(:,3); 
 
      %%%%%%%%%%%%% PROCESS INPUTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
