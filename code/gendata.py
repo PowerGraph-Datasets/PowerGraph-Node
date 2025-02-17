@@ -9,7 +9,7 @@ import torch
 from torch.utils.data import random_split, Subset
 from torch_geometric.loader import DataLoader
 from dataset import (
-    SynGraphDataset,
+    #SynGraphDataset,
     PowerGrid
     )
 from torch import default_generator

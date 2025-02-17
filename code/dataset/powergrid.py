@@ -207,7 +207,7 @@ class PowerGrid(InMemoryDataset):
             Y = mat73.loadmat(path)
             edge_order = torch.tensor(edge_index['edge_index'].astype(np.int32) - 1, dtype=torch.long).t().contiguous().to(device)
             edge_attr = torch.tensor(edge_attr['edge_attr'], dtype=torch.float)
-            edge_attr = torch.nn.functional.normalize(edge_attr, dim=1)
+            edge_attr = torch.nn.functional.normalize(edge_attr, dim=0)
             data_list = []
             fullX = []
             fullY= []
@@ -241,7 +241,7 @@ class PowerGrid(InMemoryDataset):
             Y = mat73.loadmat(path)
             edge_order = torch.tensor(edge_index['edge_index'].astype(np.int32) - 1, dtype=torch.long).t().contiguous().to(device)
             edge_attr = torch.tensor(edge_attr['edge_attr'], dtype=torch.float)
-            edge_attr = torch.nn.functional.normalize(edge_attr, dim=1)
+            edge_attr = torch.nn.functional.normalize(edge_attr, dim=0)
             data_list = []
 
             fullX = []

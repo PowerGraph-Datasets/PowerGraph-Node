@@ -1,4 +1,4 @@
-from .synthetic import SynGraphDataset
+#from .synthetic import SynGraphDataset
 from .powergrid import PowerGrid
 
-__all__ = ["PowerGrid", "SynGraphDataset"]
+__all__ = ["PowerGrid"]#, "SynGraphDataset"]
